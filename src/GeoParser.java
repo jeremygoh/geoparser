@@ -22,31 +22,37 @@ public class GeoParser {
 
 	//public methods for geocoding suggested bike racks
 	public double getLatitude(String address) {
-		JSONObject jsonObject;
 		if(!cache.containsKey(address)) {
 			getGeoCodeJSON(address);	//get it and add to cache
 		}
 		JSONObject locationObject = cache.get(address);
+		if(locationObject == null) {
+			System.out.println("ERROR: Couldn't get Latitude for the given address");
+			return 0.0;
+		}
+		
 		try {
 			return (double) locationObject.get("lat");
 		} catch(Exception e) {
-			e.printStackTrace();
+			System.out.println("ERROR: Google Maps API replied but it didn't contain the latitude of the given address.");
 			return 0.0;
 		}
 	}
 
 	public double getLongitude(String address) {
-		JSONObject jsonObject;
-		if(cache.containsKey(address)) {
-			jsonObject = cache.get(address);
-		} else {
-			getGeoCodeJSON(address);
+		if(!cache.containsKey(address)) {
+			getGeoCodeJSON(address);	//get it and add to cache
 		}
 		JSONObject locationObject = cache.get(address);
+		if(locationObject == null) {
+			System.out.println("ERROR: Couldn't get Longitude for the given address");
+			return 0.0;
+		}
+		
 		try {
 			return (double) locationObject.get("lng");
 		} catch(Exception e) {
-			e.printStackTrace();
+			System.out.println("ERROR: Google Maps API replied but it didn't contain the latitude of the given address.");
 			return 0.0;
 		}
 	}
@@ -59,8 +65,8 @@ public class GeoParser {
 	}
 
 
-	public JSONObject getGeoCodeJSON(String address) {
-
+	public void getGeoCodeJSON(String address) {
+		StringBuffer response = new StringBuffer();
 		try {
 			String stringURL = makeRequestURL(address);
 
@@ -68,32 +74,21 @@ public class GeoParser {
 
 			BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream()));
 			String line;
-			StringBuffer response = new StringBuffer();
 
 			while ((line = reader.readLine()) != null) {
 				response.append(line);
 			}
 
 			reader.close();
-
 			JSONObject jsonObject = new JSONObject(response.toString());
 			JSONObject locationObject = getLocationJSONObject(jsonObject);
 			cache.put(address, locationObject);
 			
-			return jsonObject;
-
 		} catch(Exception e) {
-			System.out.println("ERROR while retrieving the json object from the Google API: " + e.toString());
-
-			String errorString = "";
-			for (StackTraceElement element : e.getStackTrace()) {
-				errorString += element + "\n";
-			}
-			System.out.println(errorString);
+			System.out.println("ERROR: Could not retrieve information from Google Maps API");
+			cache.put(address, null);
 		}
 
-
-		return null;
 	}
 
 	public JSONObject getLocationJSONObject(JSONObject jsonObject) {
@@ -105,44 +100,8 @@ public class GeoParser {
 			return locationObject;
 		} catch (Exception e) {
 			System.out.println("ERROR: The Google Maps API replied but the json received did not contain coordinate information. Does this place exist?");
-//			e.printStackTrace();
 			return null;
 		}
 	}
-
-//	public double getLat(JSONObject json) {
-//		try {
-//			JSONArray arr = (JSONArray) json.get("results");
-//			JSONObject resultsObject = (JSONObject) arr.get(0);
-//			JSONObject geometryObject = (JSONObject) resultsObject.get("geometry");
-//			JSONObject locationObject = (JSONObject) geometryObject.get("location");
-//			return (double) locationObject.get("lat");
-//		} catch (Exception e) {
-//			System.out.println("problem getting lat");
-//			String errorString = "";
-//			for (StackTraceElement element : e.getStackTrace()) {
-//				errorString += element + "\n";
-//			}
-//			System.out.println(errorString);
-//
-//		}
-//		return (Double) 0.0;
-//	}
-//
-//	public double getLon(JSONObject json) {
-//		try {
-//			JSONArray arr = (JSONArray) json.get("results");
-//			JSONObject resultsObject = (JSONObject) arr.get(0);
-//			JSONObject geometryObject = (JSONObject) resultsObject.get("geometry");
-//			JSONObject locationObject = (JSONObject) geometryObject.get("location");
-//
-//			return (double) locationObject.get("lng");
-//		} catch (Exception e) {
-//			System.out.println("problem getting lng");
-//			e.printStackTrace();
-//
-//		}
-//		return (Double) 0.0;
-//	}
 
 }
