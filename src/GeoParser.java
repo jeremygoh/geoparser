@@ -23,13 +23,16 @@ public class GeoParser {
 	//public methods for geocoding suggested bike racks
 	public double getLatitude(String address) {
 		JSONObject jsonObject;
-		if(cache.containsKey(address)) {
-			jsonObject = cache.get(address);
-		} else {
-			jsonObject = getGeoCodeJSON(address);
+		if(!cache.containsKey(address)) {
+			getGeoCodeJSON(address);	//get it and add to cache
 		}
-		return getLat(jsonObject);
-
+		JSONObject locationObject = cache.get(address);
+		try {
+			return (double) locationObject.get("lat");
+		} catch(Exception e) {
+			e.printStackTrace();
+			return 0.0;
+		}
 	}
 
 	public double getLongitude(String address) {
@@ -37,10 +40,15 @@ public class GeoParser {
 		if(cache.containsKey(address)) {
 			jsonObject = cache.get(address);
 		} else {
-			jsonObject = getGeoCodeJSON(address);
+			getGeoCodeJSON(address);
 		}
-		return getLon(jsonObject);
-
+		JSONObject locationObject = cache.get(address);
+		try {
+			return (double) locationObject.get("lng");
+		} catch(Exception e) {
+			e.printStackTrace();
+			return 0.0;
+		}
 	}
 
 
@@ -69,7 +77,9 @@ public class GeoParser {
 			reader.close();
 
 			JSONObject jsonObject = new JSONObject(response.toString());
-			cache.put(address, jsonObject);
+			JSONObject locationObject = getLocationJSONObject(jsonObject);
+			cache.put(address, locationObject);
+			
 			return jsonObject;
 
 		} catch(Exception e) {
@@ -86,44 +96,53 @@ public class GeoParser {
 		return null;
 	}
 
-
-
-	public double getLat(JSONObject json) {
+	public JSONObject getLocationJSONObject(JSONObject jsonObject) {
 		try {
-			JSONArray arr = (JSONArray) json.get("results");
+			JSONArray arr = (JSONArray) jsonObject.get("results");
 			JSONObject resultsObject = (JSONObject) arr.get(0);
 			JSONObject geometryObject = (JSONObject) resultsObject.get("geometry");
 			JSONObject locationObject = (JSONObject) geometryObject.get("location");
-			return (double) locationObject.get("lat");
+			return locationObject;
 		} catch (Exception e) {
-			System.out.println("problem getting lat");
-			String errorString = "";
-			for (StackTraceElement element : e.getStackTrace()) {
-				errorString += element + "\n";
-			}
-			System.out.println(errorString);
-
+			System.out.println("ERROR: The Google Maps API replied but the json received did not contain coordinate information. Does this place exist?");
+//			e.printStackTrace();
+			return null;
 		}
-		return (Double) 0.0;
 	}
 
-	public double getLon(JSONObject json) {
-		try {
-			JSONArray arr = (JSONArray) json.get("results");
-			JSONObject resultsObject = (JSONObject) arr.get(0);
-			JSONObject geometryObject = (JSONObject) resultsObject.get("geometry");
-			JSONObject locationObject = (JSONObject) geometryObject.get("location");
-
-			return (double) locationObject.get("lng");
-		} catch (Exception e) {
-			System.out.println("problem getting lng");
-			String errorString = "";
-			for (StackTraceElement element : e.getStackTrace()) {
-				errorString += element + "\n";
-			}
-			System.out.println(errorString);
-		}
-		return (Double) 0.0;
-	}
+//	public double getLat(JSONObject json) {
+//		try {
+//			JSONArray arr = (JSONArray) json.get("results");
+//			JSONObject resultsObject = (JSONObject) arr.get(0);
+//			JSONObject geometryObject = (JSONObject) resultsObject.get("geometry");
+//			JSONObject locationObject = (JSONObject) geometryObject.get("location");
+//			return (double) locationObject.get("lat");
+//		} catch (Exception e) {
+//			System.out.println("problem getting lat");
+//			String errorString = "";
+//			for (StackTraceElement element : e.getStackTrace()) {
+//				errorString += element + "\n";
+//			}
+//			System.out.println(errorString);
+//
+//		}
+//		return (Double) 0.0;
+//	}
+//
+//	public double getLon(JSONObject json) {
+//		try {
+//			JSONArray arr = (JSONArray) json.get("results");
+//			JSONObject resultsObject = (JSONObject) arr.get(0);
+//			JSONObject geometryObject = (JSONObject) resultsObject.get("geometry");
+//			JSONObject locationObject = (JSONObject) geometryObject.get("location");
+//
+//			return (double) locationObject.get("lng");
+//		} catch (Exception e) {
+//			System.out.println("problem getting lng");
+//			e.printStackTrace();
+//
+//		}
+//		return (Double) 0.0;
+//	}
 
 }
